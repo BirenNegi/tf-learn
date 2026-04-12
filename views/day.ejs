@@ -1,0 +1,223 @@
+<%- include('partials/header', { title: 'Day ' + day.id + ': ' + day.title }) %>
+
+<div class="day-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-head">All Days</div>
+    <% const allPhases = phases; %>
+    <% allPhases.forEach(ph => { %>
+    <%   const phDays = days.filter(d => d.phase === ph.id); %>
+    <div class="sidebar-phase">
+      <div class="sidebar-phase-label" style="color:<%= ph.color %>">Phase <%= ph.id %> — <%= ph.name %></div>
+      <% phDays.forEach(d => { %>
+      <a href="/day/<%= d.id %>"
+         class="sidebar-day <%= d.id === day.id ? 'active' : '' %>"
+         style="<%= d.id === day.id ? 'color:' + ph.color + '; border-left-color:' + ph.color : '' %>"
+         data-day="<%= d.id %>">
+        <div class="s-dot"></div>
+        <span>Day <%= d.id %> · <%= d.title.length > 22 ? d.title.substring(0, 22) + '…' : d.title %></span>
+      </a>
+      <% }) %>
+    </div>
+    <% }) %>
+  </aside>
+
+  <!-- Main content -->
+  <div class="day-main">
+    <div class="day-top-bar">
+      <div class="day-meta">
+        <span class="day-meta-badge" style="background:<%= phase.bg %>20; color:<%= phase.color %>">
+          Day <%= day.id %>
+        </span>
+        <span class="day-meta-badge" style="
+          background: <%= day.type === 'project' ? 'rgba(29,158,117,0.15)' : day.type === 'advanced' ? 'rgba(127,119,221,0.15)' : 'rgba(55,138,221,0.12)' %>;
+          color: <%= day.type === 'project' ? '#4ecb9e' : day.type === 'advanced' ? '#a9a4ea' : '#6baee8' %>;">
+          <%= day.type.charAt(0).toUpperCase() + day.type.slice(1) %>
+        </span>
+        <span style="font-size:12px; color: var(--text3)"><%= phase.name %></span>
+      </div>
+      <div class="day-title-main"><%= day.title %></div>
+      <div class="tabs">
+        <button class="tab active" data-tab="theory">📘 Theory</button>
+        <button class="tab" data-tab="lab">🔬 Hands-on Lab</button>
+        <button class="tab" data-tab="challenge">🎯 Challenge</button>
+      </div>
+    </div>
+
+    <!-- THEORY TAB -->
+    <div class="day-content tab-panel" id="panel-theory">
+      <div class="section">
+        <div class="section-label">Introduction</div>
+        <p class="prose"><%= day.theory.intro %></p>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Key Concepts</div>
+        <div class="concept-grid">
+          <% day.theory.concepts.forEach(c => { %>
+          <div class="concept-card">
+            <h4><%= c.title %></h4>
+            <p><%= c.body %></p>
+          </div>
+          <% }) %>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Code Example</div>
+        <div class="code-wrap">
+          <div class="code-label">
+            <span class="code-lang">HCL · Terraform</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre class="code-block"><code id="code-content"><%= day.theory.code %></code></pre>
+        </div>
+        <div class="explainer">
+          <strong>What this code does:</strong> <%= day.theory.codeExplainer %>
+        </div>
+      </div>
+
+      <% if (day.theory.warnings && day.theory.warnings.length > 0) { %>
+      <div class="section">
+        <div class="section-label">Common Mistakes</div>
+        <% day.theory.warnings.forEach(w => { %>
+        <div class="warn-box"><strong>⚠</strong> <%= w %></div>
+        <% }) %>
+      </div>
+      <% } %>
+
+      <div style="margin-top: 1.5rem; padding: 16px 18px; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: space-between; flex-wrap: gap; gap: 12px;">
+        <div>
+          <div style="font-size:13px; font-weight:600; margin-bottom:3px;">Want to go deeper?</div>
+          <div style="font-size:12px; color: var(--text2);">Open the AI Deep Dive for interactive Q&A on any concept from this day.</div>
+        </div>
+        <a href="/day/<%= day.id %>/deep-dive" style="padding:9px 18px; background: var(--p4); border-radius: var(--radius); font-size:13px; font-weight:600; color:white; text-decoration:none; white-space:nowrap;">
+          AI Deep Dive →
+        </a>
+      </div>
+    </div>
+
+    <!-- LAB TAB -->
+    <div class="day-content tab-panel" id="panel-lab" style="display:none">
+      <div class="section">
+        <div class="section-label">Lab Overview</div>
+        <p class="prose"><%= day.lab.intro %></p>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Step-by-step</div>
+        <% day.lab.steps.forEach((step, i) => { %>
+        <div class="step">
+          <div class="step-num" style="background:<%= phase.bg %>25; color:<%= phase.color %>"><%= i + 1 %></div>
+          <div class="step-body">
+            <div class="step-title"><%= step.title %></div>
+            <div class="step-desc"><%= step.desc %></div>
+          </div>
+        </div>
+        <% }) %>
+      </div>
+
+      <div class="warn-box">
+        <strong>Cost reminder:</strong> Always run <code style="font-family:var(--mono);font-size:11px;background:var(--bg4);padding:1px 4px;border-radius:3px">terraform destroy</code> after each lab session to avoid unexpected Azure charges.
+      </div>
+    </div>
+
+    <!-- CHALLENGE TAB -->
+    <div class="day-content tab-panel" id="panel-challenge" style="display:none">
+      <div class="challenge-box">
+        <div class="challenge-title">
+          <span>🎯</span> Daily Challenge · Day <%= day.id %>
+        </div>
+        <div class="challenge-desc"><%= day.challenge.task %></div>
+      </div>
+
+      <div class="hints-section">
+        <button class="hint-toggle-btn" onclick="toggleHints()">
+          💡 Show hints (<%= day.challenge.hints.length %>)
+        </button>
+        <ul class="hints-list" id="hints-list">
+          <% day.challenge.hints.forEach(h => { %>
+          <li><%= h %></li>
+          <% }) %>
+        </ul>
+      </div>
+
+      <div class="solution-section" style="margin-top: 1.5rem;">
+        <button class="solution-toggle-btn" onclick="toggleSolution()">
+          👁 Reveal solution — try it yourself first
+        </button>
+        <div class="solution-code" id="solution-code">
+          <div class="code-wrap" style="margin-top: 10px;">
+            <div class="code-label">
+              <span class="code-lang">Solution · HCL</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre class="code-block"><code><%= day.challenge.solution %></code></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="tip-box" style="margin-top: 1.5rem;">
+        Stuck on the challenge? Open <a href="/day/<%= day.id %>/deep-dive" style="color:var(--p2-text)">AI Deep Dive →</a> and ask for hints or a walkthrough.
+      </div>
+    </div>
+
+    <!-- Bottom nav -->
+    <div class="bottom-nav">
+      <% if (prev) { %>
+      <a href="/day/<%= prev.id %>" class="nav-btn-day">← Day <%= prev.id %></a>
+      <% } else { %>
+      <span class="nav-btn-day disabled">← Previous</span>
+      <% } %>
+
+      <div style="display:flex; align-items:center; gap:10px">
+        <a href="/day/<%= day.id %>/deep-dive" style="font-size:12px; color:var(--text2); padding:7px 14px; border:1px solid var(--border2); border-radius:99px; text-decoration:none; transition:all .15s;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='transparent'">
+          AI Deep Dive ↗
+        </a>
+        <button class="mark-done-btn undone" id="mark-done-btn" onclick="markDone(<%= day.id %>)">
+          Mark complete
+        </button>
+      </div>
+
+      <% if (next) { %>
+      <a href="/day/<%= next.id %>" class="nav-btn-day">Day <%= next.id %> →</a>
+      <% } else { %>
+      <span class="nav-btn-day disabled">Next →</span>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<script>
+const DAY_ID = <%= day.id %>;
+
+// Tab switching
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.tab).style.display = 'block';
+  });
+});
+
+// Restore done state — runs after main.js defines getCompleted()
+window.addEventListener('load', () => {
+  const done = getCompleted();
+  if (done.includes(DAY_ID)) {
+    const btn = document.getElementById('mark-done-btn');
+    if (btn) { btn.textContent = '✓ Complete'; btn.classList.remove('undone'); }
+  }
+  done.forEach(id => {
+    const el = document.querySelector('.sidebar-day[data-day="' + id + '"] .s-dot');
+    if (el) el.classList.add('done');
+  });
+  // Apply syntax highlight
+  document.querySelectorAll('pre.code-block code').forEach(b => {
+    b.innerHTML = highlightHCL(b.textContent);
+  });
+});
+</script>
+
+<%- include('partials/footer') %>
