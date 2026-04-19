@@ -1,0 +1,73 @@
+<%- include('partials/header', { title: '30-Day Roadmap' }) %>
+
+<div class="page-wide">
+  <div class="hero">
+    <div class="hero-badge">⚡ Beginner to Advanced</div>
+    <h1>Terraform + <span>Azure</span><br>30-Day Learning Path</h1>
+    <p>Theory, hands-on labs, and a daily challenge. Projects every 4–5 days. AI deep dive available for every lesson.</p>
+    <div class="stats-row">
+      <div class="stat-pill"><strong>30</strong> Days</div>
+      <div class="stat-pill"><strong>6</strong> Phases</div>
+      <div class="stat-pill"><strong>7</strong> Projects</div>
+      <div class="stat-pill"><strong>30</strong> Challenges</div>
+      <div class="stat-pill">AI Deep Dive on every lesson</div>
+    </div>
+  </div>
+
+  <% phases.forEach(phase => { %>
+  <%
+    const phaseDays = days.filter(d => d.phase === phase.id);
+    const startDay = phaseDays[0].id;
+    const endDay = phaseDays[phaseDays.length - 1].id;
+  %>
+  <div class="phase-section">
+    <div class="phase-header" style="background: <%= phase.bg %>18; border-left-color: <%= phase.color %>;">
+      <div>
+        <h2 style="color: <%= phase.color %>">Phase <%= phase.id %> — <%= phase.name %></h2>
+        <p>Days <%= startDay %>–<%= endDay %></p>
+      </div>
+      <div class="phase-day-range" style="color: <%= phase.color %>">
+        <%= phaseDays.length %> days
+      </div>
+    </div>
+
+    <div class="days-grid">
+      <% phaseDays.forEach(day => { %>
+      <a href="/day/<%= day.id %>" class="day-card <%= day.type === 'project' ? 'is-project' : '' %>"
+         style="<%= day.type === 'project' ? 'border-top-color: ' + phase.color + ';' : '' %>"
+         data-day="<%= day.id %>">
+        <div class="day-card-top">
+          <span class="day-num" style="background:<%= phase.bg %>30; color:<%= phase.color %>">
+            Day <%= day.id %>
+          </span>
+          <span class="day-type-badge" style="
+            background: <%= day.type === 'project' ? 'rgba(29,158,117,0.15)' : day.type === 'advanced' ? 'rgba(127,119,221,0.15)' : 'rgba(55,138,221,0.12)' %>;
+            color: <%= day.type === 'project' ? '#4ecb9e' : day.type === 'advanced' ? '#a9a4ea' : '#6baee8' %>;">
+            <%= day.type === 'project' ? 'Project' : day.type === 'advanced' ? 'Advanced' : 'Theory' %>
+          </span>
+        </div>
+        <h3><%= day.title %></h3>
+        <p><%= day.subtitle %></p>
+        <div class="day-card-footer">
+          <div class="done-check" id="check-<%= day.id %>">✓</div>
+          <span style="font-size:11px; color: var(--text3)">→</span>
+        </div>
+      </a>
+      <% }) %>
+    </div>
+  </div>
+  <% }) %>
+</div>
+
+<script>
+// Restore completed state
+(function() {
+  const done = JSON.parse(localStorage.getItem('tf30_completed') || '[]');
+  done.forEach(id => {
+    const el = document.getElementById('check-' + id);
+    if (el) el.classList.add('checked');
+  });
+})();
+</script>
+
+<%- include('partials/footer') %>

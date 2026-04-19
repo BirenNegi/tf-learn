@@ -1,0 +1,224 @@
+<%- include('partials/header', { title: 'Deep Dive: Day ' + day.id }) %>
+
+<style>
+.dd-header {
+  padding: 20px 28px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+}
+.dd-breadcrumb { font-size: 12px; color: var(--text3); margin-bottom: 4px; }
+.dd-breadcrumb a { color: var(--text2); text-decoration: none; }
+.dd-breadcrumb a:hover { color: var(--text); }
+</style>
+
+<div class="dd-header">
+  <div>
+    <div class="dd-breadcrumb">
+      <a href="/">Dashboard</a> / <a href="/day/<%= day.id %>">Day <%= day.id %></a> / Deep Dive
+    </div>
+    <div style="font-size:1.1rem; font-weight:700;">Day <%= day.id %>: <%= day.title %></div>
+  </div>
+  <a href="/day/<%= day.id %>" style="font-size:12px; color:var(--text2); padding:6px 14px; border:1px solid var(--border2); border-radius:99px; text-decoration:none;">
+    ← Back to lesson
+  </a>
+</div>
+
+<div class="deep-dive-layout" style="max-width:1400px; margin:0 auto; padding: 0;">
+
+  <!-- Left: topic suggestions -->
+  <div style="padding: 2rem 2rem 2rem 2rem; overflow-y: auto; max-height: calc(100vh - 112px);">
+    <div style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--text3); margin-bottom:1rem;">
+      Suggested deep dives
+    </div>
+
+    <% day.deepDiveTopics.forEach(topic => { %>
+    <button class="topic-btn" onclick="sendTopic('<%= topic.replace(/'/g, "\\'") %>')">
+      <span class="topic-icon">→</span>
+      <%= topic %>
+    </button>
+    <% }) %>
+
+    <div style="margin-top:2rem; padding-top:1.5rem; border-top:1px solid var(--border);">
+      <div style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--text3); margin-bottom:.75rem;">
+        Ask anything about Day <%= day.id %>
+      </div>
+      <p style="font-size:12px; color:var(--text2); line-height:1.65; margin-bottom:1rem;">
+        Ask about specific HCL syntax, Azure resource properties, error messages you're hitting, or how a concept applies to your real work.
+      </p>
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <button class="topic-btn" onclick="sendTopic('Show me a complete, production-ready example for Day <%= day.id %> with best practices comments')">
+          <span class="topic-icon">⬡</span>
+          Full production example with comments
+        </button>
+        <button class="topic-btn" onclick="sendTopic('What are the top 5 mistakes people make on Day <%= day.id %> topic and how to avoid them?')">
+          <span class="topic-icon">⬡</span>
+          Top 5 mistakes & how to avoid them
+        </button>
+        <button class="topic-btn" onclick="sendTopic('How does Day <%= day.id %> topic connect to Microsoft Sentinel and security monitoring in Azure?')">
+          <span class="topic-icon">⬡</span>
+          How this applies to Azure security & Sentinel
+        </button>
+        <button class="topic-btn" onclick="sendTopic('Give me 3 real-world SMB client scenarios where Day <%= day.id %> topic would be used')">
+          <span class="topic-icon">⬡</span>
+          Real-world SMB client scenarios
+        </button>
+      </div>
+    </div>
+
+    <div style="margin-top:2rem; padding:14px 16px; background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius);">
+      <div style="font-size:12px; font-weight:600; margin-bottom:4px; color:var(--p4-text)">Phase <%= phase.id %> · <%= phase.name %></div>
+      <div style="font-size:12px; color:var(--text2);">Days in this phase:</div>
+      <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;">
+        <% const phaseDays = days.filter(d => d.phase === phase.id); %>
+        <% phaseDays.forEach(d => { %>
+        <a href="/day/<%= d.id %>/deep-dive"
+           style="font-size:11px; padding:3px 9px; border-radius:99px; border:1px solid var(--border2); color:<%= d.id === day.id ? phase.color : 'var(--text2)' %>; background:<%= d.id === day.id ? phase.bg + '20' : 'transparent' %>; text-decoration:none;">
+          Day <%= d.id %>
+        </a>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: AI chat panel -->
+  <div class="chat-panel">
+    <div class="chat-head">
+      <h3>AI Deep Dive</h3>
+      <p>Ask anything about Day <%= day.id %>: <%= day.title %></p>
+    </div>
+    <div class="chat-messages" id="chat-messages">
+      <div class="chat-msg ai">
+        <div class="msg-bubble">
+          <p class="prose">
+            Welcome to the Day <%= day.id %> deep dive. I'm here to explain any concept from <strong><%= day.title %></strong> in as much depth as you need.
+          </p>
+          <p class="prose">
+            You can ask me about specific HCL syntax, how Azure resources work under the hood, error messages you're hitting in the lab, or how these concepts apply to your real client work.
+          </p>
+          <p class="prose" style="margin-bottom:0">
+            Pick a topic from the left or type your question below.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="chat-input-wrap">
+      <textarea
+        id="chat-input"
+        placeholder="Ask about any concept, code, or Azure behaviour..."
+        rows="1"
+        onkeydown="handleKey(event)"
+        oninput="autoResize(this)"
+      ></textarea>
+      <button class="chat-send-btn" id="send-btn" onclick="sendMessage()">↑</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const DAY_ID = <%= day.id %>;
+let isLoading = false;
+
+function sendTopic(topic) {
+  document.getElementById('chat-input').value = topic;
+  sendMessage();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+async function sendMessage() {
+  if (isLoading) return;
+  const input = document.getElementById('chat-input');
+  const question = input.value.trim();
+  if (!question) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  isLoading = true;
+  document.getElementById('send-btn').disabled = true;
+
+  // Add user bubble
+  appendMessage('user', question);
+
+  // Add thinking indicator
+  const thinkingId = 'thinking-' + Date.now();
+  appendThinking(thinkingId);
+  scrollToBottom();
+
+  try {
+    const res = await fetch('/api/deep-dive', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, dayId: DAY_ID })
+    });
+    const data = await res.json();
+
+    // Remove thinking
+    document.getElementById(thinkingId)?.remove();
+
+    if (data.error) {
+      appendMessage('ai', '<div class="warn-box">Error: ' + data.error + '</div>');
+    } else {
+      appendMessage('ai', data.answer);
+    }
+  } catch (err) {
+    document.getElementById(thinkingId)?.remove();
+    appendMessage('ai', '<div class="warn-box">Network error — check your connection.</div>');
+  }
+
+  isLoading = false;
+  document.getElementById('send-btn').disabled = false;
+  scrollToBottom();
+}
+
+function appendMessage(role, html) {
+  const container = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'chat-msg ' + role;
+  div.innerHTML = '<div class="msg-bubble">' + (role === 'user' ? '<p>' + html + '</p>' : html) + '</div>';
+  container.appendChild(div);
+
+  // Apply syntax highlighting to any code blocks
+  div.querySelectorAll('pre code').forEach(block => {
+    block.innerHTML = highlightHCL(block.textContent);
+  });
+  scrollToBottom();
+}
+
+function appendThinking(id) {
+  const container = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.id = id;
+  div.className = 'msg-thinking';
+  div.innerHTML = '<div class="dot-loader"><span></span><span></span><span></span></div><span>Thinking…</span>';
+  container.appendChild(div);
+}
+
+function scrollToBottom() {
+  const c = document.getElementById('chat-messages');
+  c.scrollTop = c.scrollHeight;
+}
+
+// Simple HCL syntax highlight
+function highlightHCL(code) {
+  return code
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/(#[^\n]*)/g, '<span class="cm">$1</span>')
+    .replace(/\b(terraform|provider|resource|data|variable|locals|output|module|for_each|count|depends_on|lifecycle|dynamic)\b/g, '<span class="kw">$1</span>')
+    .replace(/"([^"\\]|\\.)*"/g, '<span class="str">$&</span>')
+    .replace(/\b(true|false|null)\b/g, '<span class="num">$1</span>');
+}
+</script>
+
+<%- include('partials/footer') %>
