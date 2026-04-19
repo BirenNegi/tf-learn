@@ -1,6 +1,7 @@
 const express = require("express");
 const path = require("path");
 const { phases, days } = require("./data/course");
+const { processCommand } = require("./data/terminal");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -79,6 +80,28 @@ Keep answers focused, practical, and include runnable Terraform code where relev
   } catch (err) {
     res.status(500).json({ error: "Failed to reach AI: " + err.message });
   }
+});
+
+
+// In-memory session store (keyed by sessionId)
+const terminalSessions = new Map();
+
+// Terminal command API
+app.post("/api/terminal", (req, res) => {
+  const { command, dayId, sessionId } = req.body;
+  if (!command || !dayId || !sessionId)
+    return res.status(400).json({ error: "command, dayId, sessionId required" });
+  const key = `${sessionId}:${dayId}`;
+  const state = terminalSessions.get(key) || { initialized: false, applied: false };
+  const result = processCommand(dayId, command, state);
+  terminalSessions.set(key, result.state);
+  res.json({ output: result.output, clear: result.clear || false });
+});
+
+app.post("/api/terminal/reset", (req, res) => {
+  const { dayId, sessionId } = req.body;
+  if (dayId && sessionId) terminalSessions.delete(`${sessionId}:${dayId}`);
+  res.json({ ok: true });
 });
 
 app.listen(PORT, () => {

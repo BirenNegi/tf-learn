@@ -118,8 +118,69 @@
         <% }) %>
       </div>
 
+      <!-- ── SIMULATED TERMINAL ── -->
+      <div class="section">
+        <div class="section-label">Practice Terminal</div>
+        <p class="prose" style="margin-bottom:12px">
+          Simulate the Terraform workflow for this day. Type commands and see realistic output.
+          Run <code style="font-family:var(--mono);font-size:12px;background:var(--bg4);padding:1px 5px;border-radius:3px">help</code> to see available commands or
+          <code style="font-family:var(--mono);font-size:12px;background:var(--bg4);padding:1px 5px;border-radius:3px">ls</code> to see the workspace files.
+        </p>
+
+        <div class="terminal-wrap" id="terminal-wrap">
+          <div class="terminal-topbar">
+            <div class="terminal-dots">
+              <div class="terminal-dot red"></div>
+              <div class="terminal-dot yellow"></div>
+              <div class="terminal-dot green"></div>
+            </div>
+            <div class="terminal-title">terraform-day<%= day.id %> — bash</div>
+            <div class="terminal-actions">
+              <button class="terminal-action-btn hint-btn" onclick="toggleTerminalHints()">hints</button>
+              <button class="terminal-action-btn" onclick="resetTerminal()">reset</button>
+            </div>
+          </div>
+
+          <div class="terminal-output" id="term-output">
+            <div class="terminal-welcome">
+# Day <%= day.id %> — <%= day.title %>
+# Simulated Terraform environment — commands run against a virtual workspace
+# Type "help" to see available commands, "ls" to list workspace files
+            </div>
+          </div>
+
+          <div class="terminal-hint-panel" id="term-hints">
+            <strong>Suggested commands for this day:</strong>
+            <div class="terminal-hint-item">1. <code>terraform init</code> — initialize the workspace</div>
+            <div class="terminal-hint-item">2. <code>terraform validate</code> — check your config</div>
+            <div class="terminal-hint-item">3. <code>terraform plan</code> — preview changes</div>
+            <div class="terminal-hint-item">4. <code>terraform apply -auto-approve</code> — apply changes</div>
+            <div class="terminal-hint-item">5. <code>terraform state list</code> — see what was created</div>
+            <div class="terminal-hint-item">6. <code>terraform output</code> — view outputs</div>
+            <div class="terminal-hint-item">7. <code>terraform destroy -auto-approve</code> — clean up</div>
+            <div class="terminal-hint-item" style="margin-top:8px">Try also: <code>ls</code> · <code>cat main.tf</code> · <code>cat variables.tf</code></div>
+          </div>
+
+          <div class="terminal-input-row">
+            <span class="terminal-ps1-input">user@tf-learn:~/day<%= day.id %>$&nbsp;</span>
+            <input
+              class="terminal-input"
+              id="term-input"
+              type="text"
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
+              placeholder="type a command..."
+              onkeydown="handleTermKey(event)"
+            />
+          </div>
+        </div>
+      </div>
+
       <div class="warn-box">
-        <strong>Cost reminder:</strong> Always run <code style="font-family:var(--mono);font-size:11px;background:var(--bg4);padding:1px 4px;border-radius:3px">terraform destroy</code> after each lab session to avoid unexpected Azure charges.
+        <strong>Cost reminder:</strong> The terminal above is simulated — no real Azure resources are created.
+        When you run the real lab on Azure, always run <code style="font-family:var(--mono);font-size:11px;background:var(--bg4);padding:1px 4px;border-radius:3px">terraform destroy</code> afterwards to avoid charges.
       </div>
     </div>
 
